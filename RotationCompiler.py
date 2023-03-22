@@ -1,5 +1,6 @@
 import numpy as np
 from itertools import combinations
+import time
 
 class RotationCircuit():
     
@@ -17,7 +18,7 @@ class RotationCircuit():
         circuit = [dict() for _ in range(self.register_size+1)]
         
         # compile a quantum lookup-table for the given function
-        for input in self.possible_inputs(self.register_size):
+        for input in self.possible_inputs():
             input_value = 0
             for bit in input:
                 input_value += self.fractional_values[bit]
@@ -39,9 +40,9 @@ class RotationCircuit():
         self.update_circuit_size()
 
     # generator for iterating over all possible inputs {}, {0}, ..., {0,1,...,n-1} for the quantum algorithm
-    def possible_inputs(self,register_size):
-        input_bits = set([index for index in range(0,register_size)])
-        for hamming_weight in range(0,register_size+1):
+    def possible_inputs(self):
+        input_bits = set([index for index in range(0,self.register_size)])
+        for hamming_weight in range(0,self.register_size+1):
             for input in combinations(input_bits, hamming_weight):
                 yield frozenset(input)
     
@@ -69,8 +70,75 @@ class RotationCircuit():
         # store the entire approximate circuit
         self.circuit = {**cheap_gates,**dict(approximate_circuit)}
         self.update_circuit_size()
+
+    def evaluate_at(self, x):
+            
+            # simulate circuit for an input x
+            final_rotation = 0
+            for control_qubits, rotation_value in self.circuit.items():
+                if control_qubits.issubset(x):
+                    final_rotation += rotation_value
+                        
+            return final_rotation
+        
+    def evaluate_circuit_errors_for_all_inputs(self):
+        
+        accumulated_error = 0
+        largest_error_so_far = 0
+        at_input = {}
+        
+        # simulate every possible input to the circuit
+        for input in self.possible_inputs():
+            final_rotation = self.evaluate_at(input)
+            
+            #compute the corresponding classical input for comparison
+            reference_input = 0
+            for bit in input:
+                reference_input += self.fractional_values[bit]
+             
+            #compute the largest absolute error that occured
+            current_error = abs(final_rotation - self.function(reference_input))
+            accumulated_error += current_error
+            if current_error > largest_error_so_far:
+                largest_error_so_far = current_error
+                at_input = input
+
+            average_error = accumulated_error / 2**self.register_size
+        return average_error, largest_error_so_far, set(at_input)
+
+    def show_accuracy(self):
+        average_error, largest_error, position  = self.evaluate_circuit_errors_for_all_inputs()
+        print("Average error: " + str(average_error))
+        print("Largest error: " + str(largest_error) + " at " + str(position) + "\n")
+    
+    def show_circuit_size(self):
+        print("Toffoli count: " + str(self.toffoli_count))
+        print("Ancilla count: " + str(self.ancilla_count) + "\n")
+
+        
+# specify the size of the quantum register storing the argument x
+n = 10
+
+# define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
+fractional_values = [0.5**(i) for i in range(1,n+1)]
+fractional_values[0] *= -1
+
+# specify the function f in the rotation R(f(x))
+f = lambda x: np.arcsin(x)
+
+#compile the circuit
+start = time.time()
+c = RotationCircuit(fractional_values,f)
+end = time.time()
+print("Compilation time: " + str(end - start) + " seconds")
+
+#print(c.circuit)
+c.show_accuracy()
+c.show_circuit_size()
+
+c.approximate_up_to_an_error_of(1E-3)
+#print(c.circuit)
+c.show_accuracy()
+c.show_circuit_size()
         
 
-c = RotationCircuit([2**(i) for i in range(3)],lambda x: x*x*x)
-c.approximate_up_to_an_error_of(0)
-print(c.circuit)
