@@ -9,8 +9,10 @@ class RotationCircuit():
         self.fractional_values = fractional_values.copy()
         self.register_size = len(self.fractional_values)
         self.function = function
-        
+
         self.compile()
+
+        self.needs_recompilation = False
 
     def compile(self):
 
@@ -19,9 +21,7 @@ class RotationCircuit():
         
         # compile a quantum lookup-table for the given function
         for input in self.possible_inputs():
-            input_value = 0
-            for bit in input:
-                input_value += self.fractional_values[bit]
+            input_value = self.compute_value_of(input)
             circuit[len(input)][input] = self.function(input_value)
         
         # transform lookup-table
@@ -47,10 +47,41 @@ class RotationCircuit():
                 yield frozenset(input)
     
     def update_circuit_size(self):
-        self.toffoli_count = np.sum([2*(len(control_qubits)-1) for control_qubits in self.circuit.keys()])
-        self.ancilla_count = np.max([len(control_qubits) for control_qubits in self.circuit.keys()])-1
+        self.toffoli_count = np.sum([max(2*(len(control_qubits)-1),0) for control_qubits in self.circuit.keys()])
+        self.ancilla_count = max(np.max([len(control_qubits) for control_qubits in self.circuit.keys()])-1,0)
+
+    def approximate_up_to_toffoli_count_of(self, maximum_toffoli_count):
+
+        if self.needs_recompilation:
+            self.compile()
+        
+        # seperate the cheap from the expensive gates and sort the latter according to a contribution-to-cost ratio
+        cheap_gates = dict([gate for gate in self.circuit.items() if len(gate[0]) < 2])
+        expensive_gates = dict([gate for gate in self.circuit.items() if len(gate[0]) >= 2])
+        approximate_circuit = sorted(expensive_gates.items(), key = lambda gate: abs(gate[1]/(2*(len(gate[0])-1))), reverse=True)
+        
+        # Until the limit on the acceptable error is reached, omit gates with a small contribution-to-cost ratio
+        current_toffoli_count = 0
+        position = 0
+        while(position < len(approximate_circuit)):
+            current_gate_toffoli_count = 2*(len(approximate_circuit[position][0])-1)
+            if current_toffoli_count + current_gate_toffoli_count > maximum_toffoli_count:
+                break
+            else:
+                current_toffoli_count += current_gate_toffoli_count
+                position += 1
+        
+        approximate_circuit = approximate_circuit[:position]
+
+        # store the entire approximate circuit
+        self.circuit = {**cheap_gates,**dict(approximate_circuit)}
+        self.update_circuit_size()
+        self.needs_recompilation = True
 
     def approximate_up_to_an_error_of(self, error_upper_bound):
+
+        if self.needs_recompilation:
+            self.compile()
         
         # seperate the cheap from the expensive gates and sort the latter according to a contribution-to-cost ratio
         cheap_gates = dict([gate for gate in self.circuit.items() if len(gate[0]) < 2])
@@ -70,16 +101,17 @@ class RotationCircuit():
         # store the entire approximate circuit
         self.circuit = {**cheap_gates,**dict(approximate_circuit)}
         self.update_circuit_size()
+        self.needs_recompilation = True
 
     def evaluate_at(self, x):
             
-            # simulate circuit for an input x
-            final_rotation = 0
-            for control_qubits, rotation_value in self.circuit.items():
-                if control_qubits.issubset(x):
-                    final_rotation += rotation_value
-                        
-            return final_rotation
+        # simulate circuit for an input x
+        final_rotation = 0
+        for control_qubits, rotation_value in self.circuit.items():
+            if control_qubits.issubset(x):
+                final_rotation += rotation_value
+                    
+        return final_rotation
         
     def evaluate_circuit_errors_for_all_inputs(self):
         
@@ -92,9 +124,7 @@ class RotationCircuit():
             final_rotation = self.evaluate_at(input)
             
             #compute the corresponding classical input for comparison
-            reference_input = 0
-            for bit in input:
-                reference_input += self.fractional_values[bit]
+            reference_input = self.compute_value_of(input)
              
             #compute the largest absolute error that occured
             current_error = abs(final_rotation - self.function(reference_input))
@@ -106,22 +136,51 @@ class RotationCircuit():
             average_error = accumulated_error / 2**self.register_size
         return average_error, largest_error_so_far, set(at_input)
 
+    def compute_value_of(self, input):
+        input_value = 0
+        for bit in input:
+            input_value += self.fractional_values[bit]
+        return input_value
+
     def show_accuracy(self):
         average_error, largest_error, position  = self.evaluate_circuit_errors_for_all_inputs()
-        print("Average error: " + str(average_error))
-        print("Largest error: " + str(largest_error) + " at " + str(position) + "\n")
+
+        position_value = self.compute_value_of(position)
+
+        print("\tAverage error: " + str(average_error))
+        print("\tLargest error: " + str(largest_error) + " at " + str(position) + " = " + str(position_value))
     
     def show_circuit_size(self):
-        print("Toffoli count: " + str(self.toffoli_count))
-        print("Ancilla count: " + str(self.ancilla_count) + "\n")
+        print("\tToffoli count: " + str(self.toffoli_count))
+        print("\tAncilla count: " + str(self.ancilla_count))
+
+    def show_circuit(self):
+        column_width = 2 + 3*(self.ancilla_count+1)-2
+        for control_qubits, rotation_value in self.circuit.items():
+            if len(control_qubits) == 0:
+                printed_characters = 2
+                for _ in range(column_width - printed_characters):
+                    print(" ", end='') 
+                print("{}", end='')
+                print("\t" + str(rotation_value))
+            else :
+                printed_characters = 2 + 3*len(control_qubits)- 2
+                for _ in range(column_width - printed_characters):
+                    print(" ", end='') 
+                print(set(control_qubits), end='')
+                print("\t" + str(rotation_value))
+    
 
         
 # specify the size of the quantum register storing the argument x
-n = 10
+n = 6
 
 # define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
 fractional_values = [0.5**(i) for i in range(1,n+1)]
 fractional_values[0] *= -1
+
+print(fractional_values)
+
 
 # specify the function f in the rotation R(f(x))
 f = lambda x: np.arcsin(x)
@@ -130,15 +189,25 @@ f = lambda x: np.arcsin(x)
 start = time.time()
 c = RotationCircuit(fractional_values,f)
 end = time.time()
-print("Compilation time: " + str(end - start) + " seconds")
+print("Compilation time: " + str(end - start) + " seconds\n")
 
+print("Exact circuit:")
 #print(c.circuit)
 c.show_accuracy()
 c.show_circuit_size()
 
+print("Approximate circuit 1:")
 c.approximate_up_to_an_error_of(1E-3)
-#print(c.circuit)
+#c.show_circuit()
 c.show_accuracy()
 c.show_circuit_size()
+
+print("Approximate circuit 2:")
+c.approximate_up_to_toffoli_count_of(300)
+c.show_accuracy()
+c.show_circuit_size()
+#c.show_circuit()
         
+
+
 
