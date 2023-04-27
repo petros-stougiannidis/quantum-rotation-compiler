@@ -113,11 +113,13 @@ class RotationCircuit():
                     
         return final_rotation
         
-    def evaluate_circuit_errors_for_all_inputs(self):
+    def compute_error_statistics(self):
         
         accumulated_error = 0
         largest_error_so_far = 0
         at_input = {}
+
+        number_of_inputs = 0
         
         # simulate every possible input to the circuit
         for input in self.possible_inputs():
@@ -133,8 +135,13 @@ class RotationCircuit():
                 largest_error_so_far = current_error
                 at_input = input
 
-            average_error = accumulated_error / 2**self.register_size
+            number_of_inputs += 1
+
+        average_error = accumulated_error / number_of_inputs
         return average_error, largest_error_so_far, set(at_input)
+
+    def evaluate_circuit_on_all_inputs(self):
+        return [(self.compute_value_of(input),abs(self.evaluate_at(input) - self.function(self.compute_value_of(input)))) for input in self.possible_inputs()]
 
     def compute_value_of(self, input):
         input_value = 0
@@ -143,16 +150,16 @@ class RotationCircuit():
         return input_value
 
     def show_accuracy(self):
-        average_error, largest_error, position  = self.evaluate_circuit_errors_for_all_inputs()
+        average_error, largest_error, position  = self.compute_error_statistics()
 
         position_value = self.compute_value_of(position)
 
         print("\tAverage error: " + str(average_error))
-        print("\tLargest error: " + str(largest_error) + " at " + str(position) + " = " + str(position_value))
+        print("\tLargest error: " + str(largest_error) + " at " + str(position) + " = " + str(position_value) + "\n")
     
     def show_circuit_size(self):
         print("\tToffoli count: " + str(self.toffoli_count))
-        print("\tAncilla count: " + str(self.ancilla_count))
+        print("\tAncilla count: " + str(self.ancilla_count) + "\n")
 
     def show_circuit(self):
         column_width = 2 + 3*(self.ancilla_count+1)-2
@@ -173,16 +180,13 @@ class RotationCircuit():
 
         
 # specify the size of the quantum register storing the argument x
-n = 6
+n = 12
 
-# define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
+# # define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
 fractional_values = [0.5**(i) for i in range(1,n+1)]
 fractional_values[0] *= -1
 
-print(fractional_values)
-
-
-# specify the function f in the rotation R(f(x))
+# # specify the function f in the rotation R(f(x))
 f = lambda x: np.arcsin(x)
 
 #compile the circuit
@@ -191,22 +195,23 @@ c = RotationCircuit(fractional_values,f)
 end = time.time()
 print("Compilation time: " + str(end - start) + " seconds\n")
 
-print("Exact circuit:")
-#print(c.circuit)
-c.show_accuracy()
-c.show_circuit_size()
+# print("Exact circuit:")
+# c.show_accuracy()
+# c.show_circuit_size()
+# c.show_circuit()
 
 print("Approximate circuit 1:")
-c.approximate_up_to_an_error_of(1E-3)
-#c.show_circuit()
+c.approximate_up_to_an_error_of(0)
 c.show_accuracy()
 c.show_circuit_size()
+# c.show_circuit()
 
-print("Approximate circuit 2:")
-c.approximate_up_to_toffoli_count_of(300)
-c.show_accuracy()
-c.show_circuit_size()
-#c.show_circuit()
+# print("Approximate circuit 2:")
+# c.approximate_up_to_toffoli_count_of(0)
+# c.show_accuracy()
+# c.show_circuit_size()
+# c.show_circuit()
+
         
 
 
