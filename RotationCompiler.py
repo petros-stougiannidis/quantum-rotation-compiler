@@ -4,15 +4,15 @@ import time
 
 class RotationCircuit():
     
-    def __init__(self, fractional_values, function):
+    def __init__(self, bit_weigts, function):
         
-        self.fractional_values = fractional_values.copy()
-        self.register_size = len(self.fractional_values)
+        self.bit_weigts = bit_weigts.copy()
+        self.register_size = len(self.bit_weigts)
         self.function = function
 
-        self.compile()
-
         self.needs_recompilation = False
+        
+        self.compile()
 
     def compile(self):
 
@@ -24,7 +24,7 @@ class RotationCircuit():
             input_value = self.compute_value_of(input)
             circuit[len(input)][input] = self.function(input_value)
         
-        # transform lookup-table
+        # transform the structure the lookup-table such that the contribution of a single rotation gate to the final result is distributed among many other rotation gates
         for layer in range(len(circuit)-1):
             for control_qubits_in_lower_layer, rotation_value in circuit[layer].items():
                 for layer_above in range(layer+1,len(circuit)):
@@ -39,7 +39,8 @@ class RotationCircuit():
         
         self.update_circuit_size()
 
-    # generator for iterating over all possible inputs {}, {0}, ..., {0,1,...,n-1} for the quantum algorithm
+    # generator for iterating over all possible inputs {}, {0}, {1},..., {0,1,...,n-1} for the quantum algorithm. In case a function is used 
+    # that is not defined for any of these values, this generator function could be modified accordingly. 
     def possible_inputs(self):
         input_bits = set([index for index in range(0,self.register_size)])
         for hamming_weight in range(0,self.register_size+1):
@@ -146,7 +147,7 @@ class RotationCircuit():
     def compute_value_of(self, input):
         input_value = 0
         for bit in input:
-            input_value += self.fractional_values[bit]
+            input_value += self.bit_weigts[bit]
         return input_value
 
     def show_accuracy(self):
@@ -182,34 +183,35 @@ class RotationCircuit():
 # specify the size of the quantum register storing the argument x
 n = 12
 
-# # define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
-fractional_values = [0.5**(i) for i in range(1,n+1)]
-fractional_values[0] *= -1
+# define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
+# bit_weights = [-0.5, 0.25, 0.125, .., 2^{-n}]
+bit_weigts = [0.5**(i) for i in range(1,n+1)]
+bit_weigts[0] *= -1
 
-# # specify the function f in the rotation R(f(x))
+# specify the function f in the rotation R(f(x))
 f = lambda x: np.arcsin(x)
 
 #compile the circuit
 start = time.time()
-c = RotationCircuit(fractional_values,f)
+c = RotationCircuit(bit_weigts,f)
 end = time.time()
 print("Compilation time: " + str(end - start) + " seconds\n")
 
-# print("Exact circuit:")
-# c.show_accuracy()
-# c.show_circuit_size()
-# c.show_circuit()
-
-print("Approximate circuit 1:")
-c.approximate_up_to_an_error_of(0)
+print("Exact circuit:")
 c.show_accuracy()
 c.show_circuit_size()
 # c.show_circuit()
 
-# print("Approximate circuit 2:")
-# c.approximate_up_to_toffoli_count_of(0)
-# c.show_accuracy()
-# c.show_circuit_size()
+print("Approximate circuit 1:")
+c.approximate_up_to_an_error_of(1E-4)
+c.show_accuracy()
+c.show_circuit_size()
+# c.show_circuit()
+
+print("Approximate circuit 2:")
+c.approximate_up_to_toffoli_count_of(500)
+c.show_accuracy()
+c.show_circuit_size()
 # c.show_circuit()
 
         
