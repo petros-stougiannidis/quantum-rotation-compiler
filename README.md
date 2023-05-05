@@ -22,5 +22,9 @@ The methods
 
 can be used in order to print out information about the resulting quantum circuit.
 
+A dictionary that specifies the compiled and approximated circuit can be accessed with the method
+
+- `get_circuit()`
+
 ## Important notes
-The algorithm scales exponentially in the size of the argument register. Therefore, it is advised to choose the length of `bit_weights` smaller than 16. In addition, this version of the program evaluates the function on every value that can be represented by a register with the given bit weights. Consequently, `function` should be chosen such that it is defined on any such value. 
+The algorithm that is used for compiling the circuit scales exponentially in the size of the argument register. Therefore, it is advised to choose the length of `bit_weights` smaller than 14 to ensure quick compilation times. In addition, this version of the program evaluates the function on every value that can be represented by a register with the given bit weights. Consequently, `function` should be chosen such that it is defined on any such value. 

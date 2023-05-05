@@ -51,6 +51,9 @@ class RotationCircuit():
         self.toffoli_count = np.sum([max(2*(len(control_qubits)-1),0) for control_qubits in self.circuit.keys()])
         self.ancilla_count = max(np.max([len(control_qubits) for control_qubits in self.circuit.keys()])-1,0)
 
+    def get_circuit(self):
+        return self.circuit
+
     def approximate_up_to_toffoli_count_of(self, maximum_toffoli_count):
 
         if self.needs_recompilation:
@@ -178,7 +181,7 @@ class RotationCircuit():
 
         
 # specify the size of the quantum register storing the argument x
-n = 12
+n = 8
 
 # define the fractional values of the argument x in the quantum register: Here, -0.5 <= x < 0.5 (equidistant over the interval)
 # bit_weights = [-0.5, 0.25, 0.125, .., 2^{-n}]
