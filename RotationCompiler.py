@@ -141,9 +141,6 @@ class RotationCircuit():
         average_error = accumulated_error / number_of_inputs
         return average_error, largest_error_so_far, set(at_input)
 
-    def evaluate_circuit_on_all_inputs(self):
-        return [(self.compute_value_of(input),abs(self.evaluate_at(input) - self.function(self.compute_value_of(input)))) for input in self.possible_inputs()]
-
     def compute_value_of(self, input):
         input_value = 0
         for bit in input:
