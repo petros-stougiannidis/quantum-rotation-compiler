@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 from itertools import combinations
 import time
 
@@ -6,7 +7,7 @@ class RotationCircuit():
     
     def __init__(self, fractional_values, function):
         
-        self.fractional_values = fractional_values.copy()
+        self.fractional_values = copy.deepcopy(fractional_values)
         self.register_size = len(self.fractional_values)
         self.function = function
 
