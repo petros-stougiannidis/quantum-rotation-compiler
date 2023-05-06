@@ -25,7 +25,7 @@ A dictionary that specifies the compiled and approximated circuit can be accesse
 
 - `get_circuit()`
 
-A demonstration is implemented at the end of the python script, which is run when handed over to a python interpreter. It is advised to use an interpreter for Python3.7 or later versions, as the implementation assumes the order-preserving properties of the dict() data structure.
+A demonstration is implemented at the end of the python script, which is run when handed over to a python interpreter. It is advised to use a version of python of 3.7 or later, as the implementation assumes the order-preserving properties of the dict() data structure.
 
 ## Important notes
 The algorithm that is used for compiling the circuit scales exponentially in the size of the argument register. Therefore, it is advised to choose the length of `bit_weights` smaller than 14 to ensure quick compilation times. In addition, this version of the program evaluates the function on every value that can be represented by a register with the given bit weights. Consequently, `function` should be chosen such that it is defined on any such value. 
