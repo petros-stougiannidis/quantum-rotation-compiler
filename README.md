@@ -1,6 +1,6 @@
 # quantum-rotation-compiler
 
-A Python program for compiling approximate lookup-tables to approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on binary value stored in a quantum register.
+A Python program for compiling approximate lookup-tables to approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on a binary value stored in a quantum register.
 ## Usage
 
 The code implements the `RotationCompiler` class. The constructor takes two arguments:
