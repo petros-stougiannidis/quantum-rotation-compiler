@@ -1,13 +1,16 @@
 # quantum-rotation-compiler
 
-A Python program for compiling reduced-size lookup-tables that approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on a binary value stored in a quantum register.
+A prototyoe Python program for compiling reduced-size lookup-tables that approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on a binary value stored in a quantum register.
+
+The accompanying paper to this project was submitted and accepted for [IEEE Quantum week 2023](https://qce.quantum.ieee.org/2023/) (preprint available on [arxiv.org](https://arxiv.org/abs/2306.05024)).
+
 ## Usage
 
 The code implements the `RotationCompiler` class. The constructor takes two arguments:
 - a list `bit_weights` that stores the bit weights of the argument quantum register, e.g., `bit_weights = [-0.5, 0.25, ..., 2^(-n)]` corresponts to a quantum register of size n that represents 2^n values in the range [-0.5, 0.5[. In contrast, `bit_weights = [2^(n-1), ..., 2, 1]` corresponds to a register that represents an n-bit integer.
 - a function `function` to implement the corresponding function rotation R(f(x)).
 
-Most of the computational work happens in the constructor, which compiles a lookup-table for the given function and transforms its structure such that the circuit can be made approximate with one of the following methods:
+Most of the computational work takes place in the constructor, which compiles a lookup-table for the given function and transforms its structure such that the circuit can be made approximate with one of the following methods:
 
 - `approximate_up_to_toffoli_count_of(maximum_toffoli_count)` 
 - `approximate_up_to_an_error_of(error_upper_bound)`
