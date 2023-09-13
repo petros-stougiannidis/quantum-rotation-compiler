@@ -1,6 +1,6 @@
 # quantum-rotation-compiler
 
-A prototyoe Python program for compiling reduced-size lookup-tables that approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on a binary value stored in a quantum register.
+A prototype Python program for compiling reduced-size lookup-tables that approximately perform arbitrary function rotations on quantum computers, i.e., single-qubit rotation gates R(x) where the parameter x corresponds a function, evaluated on a binary value stored in a quantum register.
 
 The accompanying paper to this project was submitted and accepted for [IEEE Quantum week 2023](https://qce.quantum.ieee.org/2023/) (preprint available on [arxiv.org](https://arxiv.org/abs/2306.05024)).
 
